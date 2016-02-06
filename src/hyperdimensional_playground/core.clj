@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;
 
-(def sz 10000)
+(def sz 100000)
 (Math/round (double (* 10 (/ 1 10))))
 
 ;; an entity is given a random hypervector
@@ -45,8 +45,7 @@
 ;; you can add the vectors the sum-vector
 
 (defn mean-add [& hvs]
-  (println (count hvs))
-  (m/emap #(Math/round %)
+  (m/emap #(Math/round (double %))
    (m/div (apply m/add hvs) (count hvs))))
 
 
@@ -98,11 +97,14 @@
 (def e (rand-hv))
 
 (def s1 (xor-mul (m/rotate d 0 1) e))
+
 ;; we can probe memory for d in sequence, not by d but by rotated d.
 ;; you can then get e by subtracting rotated d and and probing mem for
 ;; result
+(cosine-sim s1 (m/rotate d 0 1)) ;=> 0.6697388721247042
+(def r (mean-add (inverse (m/rotate d 0 1))))
+(cosine-sim s1 e) ;=-> 0.667150039013408
 
-(def c (rand-hv))
 
 (defn gen-hv-seq [hvecs]
   (let [f (first hvecs)
@@ -111,7 +113,6 @@
       (mean-add (m/rotate (gen-hv-seq r) 0 1) f)
       f)))
 
-(def s (gen-hv-seq [c d e]))
 
 ;; data records with bound pairs
 (def x (rand-hv)) ;first name

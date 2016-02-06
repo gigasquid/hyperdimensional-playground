@@ -11,11 +11,11 @@
 
 ;; an entity is given a random hypervector
 
-;; assume that 10,000 is big enough to be sparse with less than 10% of
+;; assume that 100,000 is big enough to be sparse with less than 10% of
 ;; it having 1s
 (defn rand-hv []
   (let [hv (m/new-sparse-array [sz])
-        n (rand-int (* 0.1 sz))]
+        n (* 0.1 sz)]
     (dotimes [i n]
       (m/mset! hv (rand-int sz) 1))
     hv))

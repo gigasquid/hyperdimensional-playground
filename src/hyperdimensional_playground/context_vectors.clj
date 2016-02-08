@@ -53,7 +53,7 @@
 (defn filter-nouns [doc]
   (let [nouns (filter #(contains? (hash-set "NN" "NNS" "NNP" "NNPS") (:pos %))
                       (process-text doc))]
-    (set (map :token nouns))))
+    (set (clojure.string/lower-case (map :token nouns)))))
 
 (defn gather-nouns-from-book [book-str]
   (let [book-text (slurp book-str)
@@ -123,17 +123,41 @@
     (println "DONE with " book-str)))
 
 
+(defn compare-word-vecs [word1 word2]
+  (let [i1 (get noun-idx word1)
+        i2 (get noun-idx word2)]
+    (assert (not (nil? i1)) (str word1 " not found"))
+    (assert (not (nil? i2)) (str word2 " not found"))
+    (when (not= word1 word2)
+      {:word1 word1
+       :word2 word2
+       :cosine (cosine-sim (m/slice freq-matrix i1)
+                           (m/slice freq-matrix i2))})))
+
 (defn sim-report []
-  (for [word1 (take 1000 fairy-tales-nouns)
-        word2 (take 1000 fairy-tales-nouns)]
+  (for [word1 (take 100 fairy-tales-nouns)
+        word2 (take 100 fairy-tales-nouns)]
     (when (not= word1 word2)
       {:word1 word1
        :word2 word2
        :cosine (cosine-sim (m/slice freq-matrix (get noun-idx word1))
                            (m/slice freq-matrix (get noun-idx word2)))})))
 
-(reduce + (for [row freq-matrix]
-   (m/esum row)))
+
+(defn sim-for-word [word threshold]
+  (let [results  (mapv #(compare-word-vecs word %)
+                       fairy-tales-nouns)]
+    (->> results
+        (filter #(and (:cosine %) (< threshold (:cosine %))))
+        (sort-by :cosine)
+        (reverse))))
+
+(defn unlike-for-word [word threshold]
+  (let [results  (mapv #(compare-word-vecs word %)
+                       fairy-tales-nouns)]
+    (->> results
+        (filter #(and (:cosine %) (> threshold (:cosine %))))
+        (sort-by :cosine))))
 
 
 (comment
@@ -149,7 +173,26 @@
  (second x)
  (take 100 x)
  (sort-by :cosine (filter #( :cosine % ) x))
- (def results (sort-by :cosine (filter #(and (:cosine %) (< 0.01 (:cosine %))) x)))
+ (def results (sort-by :cosine (filter #(and (:cosine %) (< 0.4 (:cosine %))) x)))
 
  (take 100 (reverse results))
+
+ (sim-for-word "fairy" 0.5)
+ (sim-for-word "prince" 0.5)
+ (sim-for-word "king" 0.5)
+ (sim-for-word "queen" 0.5)
+ (sim-for-word "witch" 0.3)
+ (sim-for-word "heart" 0.3)
+ (sim-for-word "skull" 0.01)
+ (sim-for-word "Cinderella" 0.2)
+ (sim-for-word "dance" 0.2)
+ (sim-for-word "gold" 0.4)
+ (unlike-for-word "heart" 0.02)
+
+(compare-word-vecs "king" "queen") ;=> {:word1 "king", :word2 "queen", :cosine 0.6097473628344817}
+(compare-word-vecs "prince" "princess") ;=> {:word1 "prince", :word2 "princess", :cosine 0.6131042090091681}
+
+
+ (take 200 noun-idx)
+
 )

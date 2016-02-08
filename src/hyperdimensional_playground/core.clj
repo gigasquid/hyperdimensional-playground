@@ -6,8 +6,7 @@
 
 ;;;;;;;;;;
 
-(def sz 100000)
-(Math/round (double (* 10 (/ 1 10))))
+(def sz 10000)
 
 ;; an entity is given a random hypervector
 
@@ -25,19 +24,25 @@
 (def c (rand-hv))
 (def d (rand-hv))
 
+a ;=> #vectorz/vector Large vector with shape: [100000]
+
 (m/dot c c)
+
 
 (defn cosine-sim [v1 v2]
   (/ (m/dot v1 v2)
-     (* (ml/norm v1) (ml/norm v2))))
+    (* (ml/norm v1) (ml/norm v2))))
+
 ;; because of hyperdimensionality any random vectors will be unrelated
 
-(cosine-sim c c) ;=> 1.0
+(cosine-sim d d ) ;=>  1.0
+
+
+(cosine-sim a a) ;=>  1.0
 (cosine-sim d d) ;=> 1.0
-(cosine-sim d c) ;=> 0.0
-(cosine-sim a b) ;=> 0.0
-(cosine-sim b c) ;=> 0.0
-(cosine-sim a c) ;=> 0.0
+(cosine-sim a b) ;=>  0.0859992468320239
+(cosine-sim b c) ;=> 0.09329186588790261
+(cosine-sim a c) ;=> 0.08782018973001954
 
 
 ;;; representing sets with sums
@@ -54,14 +59,16 @@
 
 ;; x = a + b
 (def x (mean-add a b))
-(cosine-sim x a) ;=> 0.858395075278952
-(cosine-sim x b) ;=> 0.512989176042577
-(cosine-sim x c) ;=> 0.0
+(cosine-sim x a) ;=> 0.7234918835988526
+(cosine-sim x b) ;=> 0.7229599321393805
+
+;; still not like c at all
+(cosine-sim x d)
 
 ;; y = x - b = similar to a
 (def y (mean-add x (inverse b)))
-(cosine-sim y a) ;=>  0.07483314773547883  (most similar)
-(cosine-sim y b) ;=>  0.044721359549995794
+(cosine-sim y a)
+(cosine-sim y b)
 
 (defn xor-mul [v1 v2]
   (->> (m/add v1 v2)
@@ -79,8 +86,8 @@
 (def y (rand-hv))
 (def xa (xor-mul x a))
 (def ya (xor-mul y a))
-(hamming-dist xa ya) ;=>  80.0
-(hamming-dist x y) ;=> 80.0
+(hamming-dist xa ya) ;=> 1740.0
+(hamming-dist x y) ;=> 1740.0
 
 (def z (rand-hv))
 
@@ -101,6 +108,8 @@
 ;; we can probe memory for d in sequence, not by d but by rotated d.
 ;; you can then get e by subtracting rotated d and and probing mem for
 ;; result
+
+
 (cosine-sim s1 (m/rotate d 0 1)) ;=> 0.6697388721247042
 (def r (mean-add (inverse (m/rotate d 0 1))))
 (cosine-sim s1 e) ;=-> 0.667150039013408
@@ -115,12 +124,13 @@
 
 
 ;; data records with bound pairs
-(def x (rand-hv)) ;first name
-(def y (rand-hv)) ;last name
-(def z (rand-hv)) ;age
-(def a (rand-hv)) ;Giga
-(def b (rand-hv)) ;Squid
-(def c (rand-hv)) ;101
+(def x (rand-hv)) ;; name
+(def y (rand-hv)) ;; cute-animal
+(def z (rand-hv)) ;; favorite-sock
+(def a (rand-hv)) ;; Gigasquid
+(def b (rand-hv)) ;; duck
+(def c (rand-hv)) ;; red-plaid
+
 ;H = X * A + Y * B + Z * C
 (def h (mean-add (xor-mul x a) (xor-mul y b) (xor-mul z c)))
 
@@ -128,9 +138,17 @@
 ;; inverse of x and and then match up with the known value  (x is its
 ;; own xor inverse
 (hamming-dist (xor-mul x (xor-mul x a)) a) ;=> 0
-(hamming-dist a (xor-mul x h));=> 83.0 Closest to Giga
-(hamming-dist b (xor-mul x h)) ;=> 62.0
-(hamming-dist c (xor-mul x h)) ;=> 81.0
-(cosine-sim a (xor-mul x h)) 0.0
-(cosine-sim b (xor-mul x h))
-(cosine-sim c (xor-mul x h))
+(hamming-dist a (xor-mul x h)) ;=> 1462.0
+(hamming-dist b (xor-mul x h)) ;=> 1721.0
+(hamming-dist c (xor-mul x h)) ;=> 1736.0
+(cosine-sim a (xor-mul x h)) ;=> 0.3195059768353112
+(cosine-sim b (xor-mul x h)) ;=> 0.1989075567830733
+(cosine-sim c (xor-mul x h)) ;=> 0.18705233578983288
+
+(hamming-dist (xor-mul x (xor-mul x a)) a) ;=> 0
+(hamming-dist a (xor-mul y h)) ;=> 1462.0
+(hamming-dist b (xor-mul y h)) ;=> 1721.0
+(hamming-dist c (xor-mul y h)) ;=> 1736.0
+(cosine-sim a (xor-mul y h)) ;=> 0.3195059768353112
+(cosine-sim b (xor-mul y h)) ;=> 0.1989075567830733
+(cosine-sim c (xor-mul y h)) ;=> 0.18705233578983288

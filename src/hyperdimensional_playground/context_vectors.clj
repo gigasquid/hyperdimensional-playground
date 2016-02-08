@@ -108,8 +108,8 @@
 
 (defn update-doc! [doc]
   (let [known-nouns (clojure.set/intersection fairy-tales-nouns (filter-nouns doc))]
-    (repeatedly 20 #(doseq [noun known-nouns]
-                      (m/mset! freq-matrix (get noun-idx noun) (rand-int sz) 1)))))
+    (doall (repeatedly 20 #(doseq [noun known-nouns]
+                       (m/mset! freq-matrix (get noun-idx noun) (rand-int sz) 1))))))
 
 (defn process-book [book-str]
   (let [book-text (slurp book-str)
@@ -119,7 +119,8 @@
     (doall (map-indexed (fn [idx doc]
                           (println "doc:" idx)
                           (update-doc! doc))
-                        docs))))
+                        docs))
+    (println "DONE with " book-str)))
 
 
 (defn sim-report []
@@ -131,14 +132,24 @@
        :cosine (cosine-sim (m/slice freq-matrix (get noun-idx word1))
                            (m/slice freq-matrix (get noun-idx word2)))})))
 
+(reduce + (for [row freq-matrix]
+   (m/esum row)))
+
 
 (comment
 
   (doseq [book book-list]
     (process-book book))
 
+
+
+ ;(process-book "resources/grimm_fairy_tales.txt")
+
  (def x (remove nil? (sim-report)))
  (second x)
  (take 100 x)
- (sort-by :cosine (filter #(and (:cosine %) (< 0.01 (:cosine %))) x))
+ (sort-by :cosine (filter #( :cosine % ) x))
+ (def results (sort-by :cosine (filter #(and (:cosine %) (< 0.01 (:cosine %))) x)))
+
+ (take 100 (reverse results))
 )

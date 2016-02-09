@@ -18,14 +18,6 @@
      (/ (m/dot v1 v2)
         (* (ml/norm v1) (ml/norm v2))))))
 
-(defn cosine-sim [v1 v2]
-  (let [norm1 (ml/norm v1)
-        norm2 (ml/norm v2)]
-   (when (and (pos? norm1) ( pos? norm2))
-     (/ (m/dot v1 v2)
-        (Math/sqrt
-         (* (m/esum (m/emap #(* % %) v1)) (m/esum (m/emap #(* % %) v2))))))))
-
 (defn mean-add [& hvs]
   (m/emap #(Math/round %)
    (m/div (apply m/add hvs) (count hvs))))
@@ -163,9 +155,7 @@
       {:word1 word1
        :word2 word2
        :cosine (cosine-sim (m/slice freq-matrix i1)
-                           (m/slice freq-matrix i2))
-       :hamming (hamming-dist (m/slice freq-matrix i1)
-                              (m/slice freq-matrix i2))})))
+                           (m/slice freq-matrix i2))})))
 
 (defn sim-report []
   (for [word1 (take 100 fairy-tales-nouns)
@@ -179,6 +169,15 @@
 
 (defn sim-for-word [word threshold]
   (let [results  (mapv #(compare-word-vecs word %)
+                       fairy-tales-nouns)]
+    (->> results
+        (filter #(and (:cosine %) (< threshold (:cosine %))))
+        (sort-by :cosine)
+        (reverse))))
+
+(defn sim-for-vec [wv threshold]
+  (let [results  (mapv #(hash-map :word %
+                                 :cosine (cosine-sim wv (get-word-vec %)))
                        fairy-tales-nouns)]
     (->> results
         (filter #(and (:cosine %) (< threshold (:cosine %))))
@@ -232,12 +231,19 @@
  (unlike-for-word "king" 0.04) ;=> "tusks"
  (sim-for-word "tusks" 0.01)
  (sim-for-word "goat" 0.1)
+ (sim-for-vec (get-word-vec "fairy") 0.5)
 
- [(compare-word-vecs "king" "queen")
-  (compare-word-vecs "king" "prince")
-  (compare-word-vecs "king" "apple")
-  (compare-word-vecs "king" "princess")
-  (compare-word-vecs "king" "guard")]
+ (sort-by :cosine[(compare-word-vecs "king" "queen")
+                  (compare-word-vecs "king" "prince")
+                  (compare-word-vecs "king" "princess")
+                  (compare-word-vecs "king" "guard")
+                  (compare-word-vecs "king" "goat")])
+;; ({:word1 "king", :word2 "goat", :cosine 0.1509151478896664}
+;;  {:word1 "king", :word2 "guard", :cosine 0.16098893367403827}
+;;  {:word1 "king", :word2 "queen", :cosine 0.49470535530616655}
+;;  {:word1 "king", :word2 "prince", :cosine 0.5832521795716931}
+;;  {:word1 "king", :word2 "princess", :cosine 0.5836922474743367})
+
 
 
  (cosine-sim (get-word-vec "boy") (get-word-vec "king")) ;=> 0.42996397142253145
@@ -245,6 +251,8 @@
  (cosine-sim
   (mean-add (get-word-vec "boy") (get-word-vec "gold"))
   (get-word-vec "king")) ;=> 0.5876251031366048
+ (sim-for-vec (mean-add (get-word-vec "boy") (get-word-vec "gold")) 0.5)
+
 
  (cosine-sim (get-word-vec "girl") (get-word-vec "queen")) ;=> 0.3356337018948302
  (cosine-sim (get-word-vec "girl") (get-word-vec "goat")) ;=> 0.10061278928161434
@@ -257,6 +265,9 @@
 
  (cosine-sim (get-word-vec "queen")
              (mean-add (get-word-vec "woman") (wv-subtract "king" "man"))) ;=>0.5659832204544486
+
+ (cosine-sim (mean-add (get-word-vec "giant") (get-word-vec "boy")) (get-word-vec "jack")) ;=>0.4491473187787431
+ (cosine-sim (get-word-vec "boy") (get-word-vec "jack")) ;=> 0.33102858702785953
 
 
 (compare-word-vecs "prince" "princess")

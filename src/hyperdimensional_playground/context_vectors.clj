@@ -386,8 +386,4 @@
    (mean-add (get-word-vec "jack") (get-word-vec "hansel"))
    (xor-mul siblings facts)) ;=> 0.5431168503661485
 
-  ;; are jack and cinderella siblings?
-  (cosine-sim
-   (mean-add (get-word-vec "hansel") (get-word-vec "cinderella"))
-   (xor-mul siblings facts)) ;=>0.44419839153931734
   )

@@ -386,4 +386,34 @@
    (mean-add (get-word-vec "jack") (get-word-vec "hansel"))
    (xor-mul siblings facts)) ;=> 0.5431168503661485
 
+
+  ;; What about retracting a facts?
+  ;; let's retract the fact that jack is the brother of hansel
+  ;; and that jack is the sister of gretel
+  (def new-facts (mean-add facts
+                           (inverse jack-brother-of-hansel)
+                           (inverse gretel-sister-of-jack)))
+
+
+ ;; are hansel and gretel siblings?
+  (cosine-sim
+   (mean-add (get-word-vec "hansel") (get-word-vec "gretel"))
+   (xor-mul siblings new-facts)) ;=> 0.3149865024032703
+
+
+  ;; are jack and gretel siblings?
+  (cosine-sim
+   (mean-add (get-word-vec "jack") (get-word-vec "gretel"))
+   (xor-mul siblings new-facts)) ;=>0.18097717659128212
+
+  ;; are jack and hansel siblings?
+  (cosine-sim
+   (mean-add (get-word-vec "jack") (get-word-vec "hansel"))
+   (xor-mul siblings new-facts)) ;=>0.17644485503854168
+
+  ;; are jack and cinderella siblings?
+  (cosine-sim
+   (mean-add (get-word-vec "jack") (get-word-vec "cinderella"))
+   (xor-mul siblings new-facts)) ;=> 0.1561769407526351
+
   )
